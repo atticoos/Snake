@@ -18,6 +18,10 @@
 					<h4>Score</h4>
 					<span id="score"></span>
 				</div>
+				<div>
+					<h4>Timer</h4>
+					<span id="timer"></span>
+				</div>
 			</div>
 		</div>	
 	</div>

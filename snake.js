@@ -12,17 +12,40 @@
 		timeThreshold: 50,
 		blocks: [],
 		graph: [],
-		score: 0,
+		score: 1,
 		scoreModifier: 1,
 		direction: {
 			x: 0,
 			y: 0
 		},
+		startTime: 0,
+		gameState: {
+			'playing' : false,
+			'complete' : false
+		},
+		
+		
 		
 		increaseScore: function(){
 			self.score += (1 * self.scoreModifier);
 		},
-		
+		updateTime: function(){
+			var min = 0, sec = 0, self = this;
+			
+			if (self.startTime){
+				var now = new Date();
+				var diff = (now - self.startTime);
+	
+				var min = Math.floor(((diff/1000)/60));
+				var sec = Math.floor((diff/1000));
+			}
+			var minFormatted = "0" + min;
+			minFormatted = minFormatted.substring(minFormatted.length - 2);
+			var secFormatted = "0" + sec;
+			secFormatted = secFormatted.substring(secFormatted.length - 2);
+			
+			$("#timer").text(minFormatted + ":" + secFormatted);
+		},
 		updateScreen: function(){
 			var self = this;
 			self.snake.move();
@@ -65,21 +88,12 @@
 			}
 			
 			$("#score").text(self.score);
+			self.updateTime();
 		},
 		inputs: function(){
 			var self = this;
 			document.onkeydown = function(evt){
 				evt = evt || window.event;
-				
-				if (evt.keyCode == 32){
-					self.snake.grow();
-					return;
-				}
-				
-				var currentDirection = self.snake.direction;
-				
-				
-				
 				
 				if (evt.keyCode == 38){
 					// UP
@@ -105,6 +119,12 @@
 					if (self.direction.x == -1) return;
 					self.direction.x = 1;
 					self.direction.y = 0;
+				} else {
+					return;
+				}
+				
+				if (!self.gameState.playing && !self.gameState.complete){
+					self.startGame();
 				}
 				
 			}
@@ -136,11 +156,16 @@
 			
 		},
 		
+		startGame: function(){
+			this.startTime = new Date();
+			this.gameState.playing = true;
+		},	
 		initialize : function(){
 			this.snake = new Snake(this);
 			this.inputs();
 			this.generateBlock();
 			this.updateScreen();
+			
 		}	
 	
 	};
@@ -200,6 +225,9 @@
 			if (this.next.next){
 				this.x = this.next.x - (this.next.next.x - this.next.x);
 				this.y = this.next.y - (this.next.next.y - this.next.y);
+			} else {
+				this.x = this.next.x - direction.x;
+				this.y = this.next.y - direction.y;
 			}
 			
 			/*
