@@ -25,7 +25,6 @@
 		},
 		
 		
-		
 		increaseScore: function(){
 			self.score += (1 * self.scoreModifier);
 		},
@@ -46,10 +45,22 @@
 			
 			$("#timer").text(minFormatted + ":" + secFormatted);
 		},
+		detectBoundaryCollision: function(){
+			var self = this,
+				boundaryX = Math.floor(canvas.width / 7) + 1,
+				boundaryY = Math.floor(canvas.height / 7) + 1;
+			if (self.snake.nodes[0].x >= boundaryX || self.snake.nodes[0].x < 0){
+				alert("Collision");
+				self.gameState.complete = true;
+			} else if (self.snake.nodes[0].y >= boundaryY || self.snake.nodes[0].y < 0){
+				alert("Collision");
+				self.gameState.complete = true;
+			}
+		},
 		updateScreen: function(){
 			var self = this;
 			self.snake.move();
-			
+			self.detectBoundaryCollision();
 			
 			var removeBlockIdx = false;
 			for (var i=0; i<self.blocks.length; i++){
