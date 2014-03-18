@@ -1,4 +1,4 @@
-(function(){
+(function($){
 	
 	var canvas = document.getElementById("snake");
 	var ctx = canvas.getContext("2d");
@@ -12,9 +12,15 @@
 		timeThreshold: 50,
 		blocks: [],
 		graph: [],
+		score: 0,
+		scoreModifier: 1,
 		direction: {
 			x: 0,
 			y: 0
+		},
+		
+		increaseScore: function(){
+			self.score += (1 * self.scoreModifier);
 		},
 		
 		updateScreen: function(){
@@ -27,10 +33,12 @@
 				var node = self.snake.nodes[0];
 				var block = self.blocks[i];
 				
-				if (node.x >= block.x && node.x <= block.x+5 && node.y >= block.y && node.y <= block.y + 5){
+				if (node.x == block.x && node.y == block.y){
 					self.snake.grow();
+					self.score++;
 					removeBlockIdx = i;
 				}
+				
 			}
 			if (removeBlockIdx !== false){
 				self.blocks.splice(removeBlockIdx, 1);
@@ -48,13 +56,15 @@
 			ctx.fillStyle = "#FFF";
 			for (var i=0; i<self.snake.nodes.length; i++){
 				var node = self.snake.nodes[i];
-				ctx.fillRect(node.x, node.y, 5, 5);
+				ctx.fillRect((node.x*7)+1, (node.y*7)+1, 5, 5);
 			}
 			ctx.fillStyle = "#ffff00";
 			for (var i=0; i<self.blocks.length; i++){
 				var node = self.blocks[i];
-				ctx.fillRect(node.x, node.y, 5, 5);
+				ctx.fillRect((node.x*7)+1, (node.y*7)+1, 5, 5);
 			}
+			
+			$("#score").text(self.score);
 		},
 		inputs: function(){
 			var self = this;
@@ -68,23 +78,33 @@
 				
 				var currentDirection = self.snake.direction;
 				
-				self.direction.y = 0;
-				self.direction.x = 0;
 				
 				
 				
 				if (evt.keyCode == 38){
-					self.direction.y = -5;
+					// UP
 					evt.preventDefault();
+					if (self.direction.y == 1) return;
+					self.direction.x = 0;
+					self.direction.y = -1;
 				} else if (evt.keyCode == 40){
-					self.direction.y = 5;
+					// DOWN
 					evt.preventDefault();
+					if (self.direction.y == -1) return;
+					self.direction.x = 0;
+					self.direction.y = 1;
 				} else if (evt.keyCode == 37){
-					self.direction.x = -5;
+					// LEFT
 					evt.preventDefault();
+					if (self.direction.x == 1) return;
+					self.direction.x = -1;
+					self.direction.y = 0;
 				} else if (evt.keyCode == 39){
-					self.direction.x = 5;
+					// RIGHT
 					evt.preventDefault();
+					if (self.direction.x == -1) return;
+					self.direction.x = 1;
+					self.direction.y = 0;
 				}
 				
 			}
@@ -92,13 +112,11 @@
 		},
 		generateBlock: function(){
 			var block = new Node();
-			var x_slots = Math.floor(canvas.width / 5) -1;
-			var y_slots = Math.floor(canvas.height / 5) -1;
+			var x_slots = Math.floor(canvas.width / 7);
+			var y_slots = Math.floor(canvas.height / 7);
 			
 			var x = Math.floor(Math.random() * x_slots) + 1;
 			var y = Math.floor(Math.random() * y_slots) + 1;
-			x *= 5;
-			y *= 5;
 			console.log("New block", {x: x, y:y});
 			block.x = x;
 			block.y = y;
@@ -119,10 +137,7 @@
 		},
 		
 		initialize : function(){
-			this.snake = new Snake();
-			
-			this.test();
-			return;
+			this.snake = new Snake(this);
 			this.inputs();
 			this.generateBlock();
 			this.updateScreen();
@@ -131,9 +146,11 @@
 	};
 	
 	
-	var Snake = function(){
+	var Snake = function(game){
 		var self = this;
+		var game = game;
 		this.nodes = [];
+		
 		
 		
 		this.move = function(){
@@ -141,42 +158,34 @@
 			node.move(node.x + Game.direction.x, node.y + Game.direction.y);
 			
 			
+			
+			
 			for (var i=1; i<self.nodes.length; i++){
 				self.nodes[i].move();
+				if (node.x == self.nodes[i].x && node.y == self.nodes[i].y){
+					alert("Collision");
+				}
 			}
 			
 		};
 		
 		this.grow = function(){
 			var lastNode = this.nodes[this.nodes.length-1];
-			var node = new Node(lastNode);
-			this.nodes.push(node);
-			return;
-			
-			/*
-			var offset = {
-				x: Game.direction.x > 0 ? 1 : Game.direction.x < 0 ? -1 : 0,
-				y: Game.direction.y > 0 ? 1 : Game.direction.y < 0 ? -1 : 0
-			}
-			*/
-			var lastNode = this.nodes[this.nodes.length-1];
-			var node = new Node(lastNode.prevX, lastNode.prevY);
-			node.prev = lastNode;
-			this.nodes[this.nodes.length-1].next = node;
+			var node = new Node(lastNode, game.direction);
 			this.nodes.push(node);
 		}
 		
 		var init = function(){
 			var node = new Node();
-			node.x = 50;
-			node.y = 50;
+			node.x = Math.floor((Math.floor(canvas.width / 7)-1) / 2);
+			node.y = Math.floor((Math.floor(canvas.height / 7)-1) / 2);
 			self.nodes.push(node);
 		}
 		
 		init();
 	};
 	
-	var Node = function(lastNode){
+	var Node = function(lastNode, direction){
 		this.prev = false;
 		this.next = false;
 		this.x;
@@ -186,17 +195,33 @@
 		
 		if (lastNode){
 			this.next = lastNode;
-			this.x = lastNode.x;
-			this.y = lastNode.y;
+			
+			var growthDirection = {x:0,y:0};
+			if (this.next.next){
+				this.x = this.next.x - (this.next.next.x - this.next.x);
+				this.y = this.next.y - (this.next.next.y - this.next.y);
+			}
+			
+			/*
+			if(lastNode.next){
+				if (lastNode.next.x == lastNode.x){
+					// increase Y
+					this.x = lastNode.y - direction.y;
+				} else if (lastNode.next.y == lastNode.y){
+					// increase X
+					this.y = lastNode.x - direction.x;
+				}
+				
+			} else {
+				this.x = lastNode.x - direction.x;
+				this.y = lastNode.y - direction.y;	
+			}
+			*/
 			lastNode.prev = this;
 		}
 		
 		
 		this.move = function (x,y){
-			//this.prevX = this.x;
-			//this.prevY = this.y;
-			//this.x = x;
-			//this.y = y;
 			this.prevX = this.x;
 			this.prevY = this.y;
 			if (x && y){
@@ -204,13 +229,6 @@
 				this.y = y;
 				return;
 			}
-			
-			/*
-			var offset = {
-				x: Game.direction.x > 0 ? 1 : Game.direction.x < 0 ? -1 : 0,
-				y: Game.direction.y > 0 ? 1 : Game.direction.y < 0 ? -1 : 0
-			}
-			*/
 			
 			var prevNode = this.next;
 			this.x = prevNode.prevX;
@@ -227,4 +245,4 @@
 	
 	Game.initialize();
 	
-})();
+})(jQuery);
